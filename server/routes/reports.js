@@ -1,0 +1,2 @@
+import {Router} from 'express'; import {requireAuth} from '../middleware/auth.js'; import {upload} from '../middleware/upload.js'; import {uploadReport,listReports,getReport,viewOwnedFile,deleteReport} from '../controllers/reportController.js';
+const r=Router(); r.use(requireAuth); r.post('/upload',upload.single('file'),uploadReport); r.get('/',listReports); r.get('/:id/file',viewOwnedFile); r.get('/:id',getReport); r.delete('/:id',deleteReport); export default r;
