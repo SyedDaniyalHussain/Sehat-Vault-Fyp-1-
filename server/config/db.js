@@ -58,32 +58,40 @@ export const pool = mysql.createPool({
 export async function connectDB() {
   const connection = await pool.getConnection();
 
-  // Re-create table with both column variations or alter column if missing
+  // Create table with all required snake_case columns
   await connection.query(`
     CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       email VARCHAR(255) NOT NULL UNIQUE,
-      passwordHash VARCHAR(255),
-      password_hash VARCHAR(255),
+      password_hash VARCHAR(255) NOT NULL,
       relationship VARCHAR(50) NOT NULL,
-      patientName VARCHAR(255) NOT NULL,
+      patient_name VARCHAR(255) NOT NULL,
       age INT NOT NULL,
       gender VARCHAR(20) NOT NULL,
-      bloodGroup VARCHAR(10) NOT NULL,
+      blood_group VARCHAR(10) NOT NULL,
       phone VARCHAR(50) NOT NULL,
       address TEXT NOT NULL,
-      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
-  // If table already existed without password_hash, add it safely
-  try {
-    await connection.query(`ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);`);
-  } catch (err) {
-    // Ignore error if column already exists
+  // Safely add any missing snake_case columns if table was created previously with camelCase
+  const columnsToAdd = [
+    `ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);`,
+    `ALTER TABLE users ADD COLUMN patient_name VARCHAR(255);`,
+    `ALTER TABLE users ADD COLUMN blood_group VARCHAR(10);`,
+    `ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`
+  ];
+
+  for (const query of columnsToAdd) {
+    try {
+      await connection.query(query);
+    } catch (err) {
+      // Ignore if column already exists
+    }
   }
 
   connection.release();
-  console.log('MySQL connected & schema verified');
+  console.log('MySQL connected & schema fully updated');
 }
