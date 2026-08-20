@@ -58,13 +58,14 @@ export const pool = mysql.createPool({
 export async function connectDB() {
   const connection = await pool.getConnection();
 
-  // Create users table automatically if missing in Aiven MySQL
+  // Re-create table with both column variations or alter column if missing
   await connection.query(`
     CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       email VARCHAR(255) NOT NULL UNIQUE,
-      passwordHash VARCHAR(255) NOT NULL,
+      passwordHash VARCHAR(255),
+      password_hash VARCHAR(255),
       relationship VARCHAR(50) NOT NULL,
       patientName VARCHAR(255) NOT NULL,
       age INT NOT NULL,
@@ -76,6 +77,13 @@ export async function connectDB() {
     );
   `);
 
+  // If table already existed without password_hash, add it safely
+  try {
+    await connection.query(`ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);`);
+  } catch (err) {
+    // Ignore error if column already exists
+  }
+
   connection.release();
-  console.log('MySQL connected & users table initialized successfully');
+  console.log('MySQL connected & schema verified');
 }
